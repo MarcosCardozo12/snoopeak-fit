@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ꜱɴᴏᴏᴘᴇᴀᴋ — Entrenamiento Personalizado</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f5f0eb;
+    --accent: #c8ff00;
+    --gray: #1a1a1a;
+    --mid: #333;
+    --text-dim: #888;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.15s ease;
+    transform: translate(-50%, -50%);
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(200,255,0,0.4);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.12s ease;
+  }
+  body:hover .cursor { opacity: 1; }
+
+  /* NAVBAR */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.95), transparent);
+    backdrop-filter: blur(2px);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--white);
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s, color 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 80px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 70% 30%, rgba(200,255,0,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 10% 80%, rgba(200,255,0,0.04) 0%, transparent 50%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,255,0,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,255,0,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+  }
+  .hero-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s forwards 0.2s;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 16vw, 16rem);
+    line-height: 0.88;
+    letter-spacing: -2px;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    animation: fadeUp 0.8s forwards 0.4s;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s forwards 0.6s;
+  }
+  .hero-desc {
+    max-width: 380px;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: rgba(245,240,235,0.65);
+    font-weight: 300;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    text-align: right;
+  }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--accent);
+    display: block;
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    opacity: 0.4;
+    animation: fadeIn 1s forwards 1.2s;
+  }
+  .scroll-line {
+    width: 1px; height: 60px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+  .scroll-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+  }
+
+  /* BANNERS / TICKER */
+  .ticker-wrap {
+    background: var(--accent);
+    overflow: hidden;
+    padding: 14px 0;
+    white-space: nowrap;
+  }
+  .ticker {
+    display: inline-block;
+    animation: ticker 25s linear infinite;
+  }
+  .ticker span {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 4px;
+    color: var(--black);
+    margin: 0 32px;
+  }
+  .ticker-sep {
+    opacity: 0.4;
+    margin: 0 8px;
+  }
+
+  /* SECTIONS */
+  section { padding: 100px 48px; }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    line-height: 1;
+    margin-bottom: 48px;
+  }
+
+  /* METODOLOGÍA */
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+    margin-top: 56px;
+  }
+  .method-card {
+    background: var(--gray);
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .method-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 0;
+    background: var(--accent);
+    transition: height 0.4s ease;
+  }
+  .method-card:hover::before { height: 100%; }
+  .method-card:hover { background: #1e1e1e; }
+  .method-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: rgba(200,255,0,0.12);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .method-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .method-card p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: rgba(245,240,235,0.6);
+    font-weight: 300;
+  }
+
+  /* HORARIOS */
+  #horarios { background: var(--gray); }
+  .schedule-info {
+    display: flex;
+    gap: 48px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .schedule-info-item {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .info-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .info-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--accent);
+  }
+
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .day-col { display: flex; flex-direction: column; gap: 8px; }
+  .day-header {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-align: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--mid);
+  }
+  .slot-btn {
+    width: 100%;
+    padding: 14px 8px;
+    background: var(--black);
+    border: 1px solid var(--mid);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    text-align: center;
+  }
+  .slot-btn:hover:not(.taken) {
+    background: rgba(200,255,0,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .slot-btn.taken {
+    background: rgba(255,255,255,0.03);
+    border-color: #2a2a2a;
+    color: #444;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .slot-btn.taken::after {
+    content: 'OCUPADO';
+    display: block;
+    font-size: 0.5rem;
+    letter-spacing: 2px;
+    color: #444;
+    margin-top: 2px;
+  }
+  .slot-count {
+    display: block;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    margin-top: 3px;
+    opacity: 0.6;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    display: none;
+    place-items: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: grid; }
+  .modal {
+    background: var(--gray);
+    border: 1px solid var(--mid);
+    padding: 48px;
+    max-width: 480px;
+    width: calc(100% - 32px);
+    position: relative;
+    animation: scaleIn 0.2s ease;
+  }
+  .modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  .modal p {
+    font-size: 0.9rem;
+    color: rgba(245,240,235,0.6);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .modal-detail {
+    background: var(--black);
+    padding: 20px;
+    margin-bottom: 28px;
+    border-left: 3px solid var(--accent);
+  }
+  .modal-detail span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .modal-detail strong {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+  }
+  .modal-actions { display: flex; gap: 12px; }
+  .btn-confirm {
+    flex: 1;
+    padding: 16px;
+    background: var(--accent);
+    border: none;
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-confirm:hover { opacity: 0.85; }
+  .btn-cancel {
+    padding: 16px 24px;
+    background: transparent;
+    border: 1px solid var(--mid);
+    color: var(--white);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--white); }
+
+  /* SUCCESS MODAL */
+  .modal-success { text-align: center; }
+  .modal-success .checkmark {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  /* FILOSOFIA BANNER */
+  .banner-section {
+    padding: 0;
+    overflow: hidden;
+  }
+  .banner-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+    padding: 28px 0;
+    border-top: 1px solid var(--mid);
+    border-bottom: 1px solid var(--mid);
+  }
+  .banner-row:nth-child(2) {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .banner-row:nth-child(2) .banner-scroll { animation-direction: reverse; }
+  .banner-row:nth-child(2) .banner-item {
+    color: var(--black);
+    font-size: 1.1rem;
+  }
+  .banner-scroll {
+    display: flex;
+    animation: ticker 20s linear infinite;
+    white-space: nowrap;
+  }
+  .banner-item {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 5px;
+    color: var(--white);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+  .banner-dot {
+    width: 6px; height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    opacity: 0.4;
+  }
+
+  /* CONTACTO */
+  #contacto {
+    text-align: center;
+    background: var(--black);
+    position: relative;
+    overflow: hidden;
+  }
+  #contacto::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(200,255,0,0.07) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .ig-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 48px;
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    text-decoration: none;
+    transition: all 0.25s;
+    margin-top: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ig-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+  .ig-btn:hover::before { transform: scaleX(1); }
+  .ig-btn:hover { color: var(--black); }
+
+  .contact-sub {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 20px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 48px;
+    border-top: 1px solid var(--mid);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+  footer .logo-f {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+  footer p {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    to { opacity: 0.4; }
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    section { padding: 72px 24px; }
+    .hero { padding: 80px 24px; }
+    .hero-bottom { flex-direction: column; gap: 32px; align-items: flex-start; }
+    .hero-stats { flex-direction: row; }
+    .week-grid { grid-template-columns: repeat(2, 1fr); }
+    .week-grid .day-col:last-child { grid-column: 1 / -1; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+    .modal { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">ꜱɴᴏᴏᴘᴇᴀᴋ</a>
+  <ul class="nav-links">
+    <li><a href="#metodo">Método</a></li>
+    <li><a href="#horarios">Turnos</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contacto">Contacto</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-tag">// Entrenamiento Personalizado</div>
+  <h1 class="hero-title">SNOO<span>PEAK</span></h1>
+  <div class="hero-bottom">
+    <p class="hero-desc">Entrenamiento diseñado específicamente para vos. Técnica, progresión y resultados reales — sin excusas.</p>
+    <div class="hero-stats">
+      <div>
+        <span class="stat-num">10</span>
+        <span class="stat-label">Cupos por día</span>
+      </div>
+      <div>
+        <span class="stat-num">1.5hs</span>
+        <span class="stat-label">Por clase</span>
+      </div>
+      <div>
+        <span class="stat-num">5</span>
+        <span class="stat-label">Días semanales</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    <span class="scroll-text">Scroll</span>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span>DISCIPLINA <span class="ticker-sep">✦</span></span>
+    <span>CONSTANCIA <span class="ticker-sep">✦</span></span>
+    <span>RESULTADOS REALES <span class="ticker-sep">✦</span></span>
+    <span>ENTRENAMIENTO PERSONALIZADO <span class="ticker-sep">✦</span></span>
+    <span>SNOOPEAK <span class="ticker-sep">✦</span></span>
+    <span>DISCIPLINA <span class="ticker-sep">✦</span></span>
+    <span>CONSTANCIA <span class="ticker-sep">✦</span></span>
+    <span>RESULTADOS REALES <span class="ticker-sep">✦</span></span>
+    <span>ENTRENAMIENTO PERSONALIZADO <span class="ticker-sep">✦</span></span>
+    <span>SNOOPEAK <span class="ticker-sep">✦</span></span>
+  </div>
+</div>
+
+<!-- MÉTODO -->
+<section id="metodo">
+  <div class="section-label">// 01 — Metodología</div>
+  <h2 class="section-title">EL MÉTODO<br>SNOOPEAK</h2>
+  <div class="method-grid">
+    <div class="method-card">
+      <div class="method-num">01</div>
+      <h3>Evaluación Inicial</h3>
+      <p>Analizamos tu punto de partida: condición física, historial, objetivos y limitaciones. Sin atajos, sin suposiciones.</p>
+    </div>
+    <div class="method-card">
+      <div class="method-num">02</div>
+      <h3>Plan a Medida</h3>
+      <p>Cada sesión está diseñada para vos. No hay rutinas genéricas — cada movimiento tiene un propósito claro.</p>
+    </div>
+    <div class="method-card">
+      <div class="method-num">03</div>
+      <h3>Seguimiento Real</h3>
+      <p>Registramos tu progreso sesión a sesión. Los números no mienten y el plan evoluciona con vos.</p>
+    </div>
+    <div class="method-card">
+      <div class="method-num">04</div>
+      <h3>Resultados</h3>
+      <p>El objetivo siempre presente. Fuerza, composición corporal, rendimiento — lo que sea que venga a buscar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BANNERS FRASES -->
+<div class="banner-section">
+  <div class="banner-row">
+    <div class="banner-scroll">
+      <div class="banner-item">EL LÍMITE LO PONÉS VOS <div class="banner-dot"></div></div>
+      <div class="banner-item">CADA REP CUENTA <div class="banner-dot"></div></div>
+      <div class="banner-item">CONSISTENCIA SOBRE INTENSIDAD <div class="banner-dot"></div></div>
+      <div class="banner-item">EL PROGRESO ES TUYO <div class="banner-dot"></div></div>
+      <div class="banner-item">EL LÍMITE LO PONÉS VOS <div class="banner-dot"></div></div>
+      <div class="banner-item">CADA REP CUENTA <div class="banner-dot"></div></div>
+      <div class="banner-item">CONSISTENCIA SOBRE INTENSIDAD <div class="banner-dot"></div></div>
+      <div class="banner-item">EL PROGRESO ES TUYO <div class="banner-dot"></div></div>
+    </div>
+  </div>
+  <div class="banner-row">
+    <div class="banner-scroll">
+      <div class="banner-item">NO HAY ATAJOS <div class="banner-dot"></div></div>
+      <div class="banner-item">SNOOPEAK METHOD <div class="banner-dot"></div></div>
+      <div class="banner-item">ENTRENÁ CON PROPÓSITO <div class="banner-dot"></div></div>
+      <div class="banner-item">FUERZA DE VERDAD <div class="banner-dot"></div></div>
+      <div class="banner-item">NO HAY ATAJOS <div class="banner-dot"></div></div>
+      <div class="banner-item">SNOOPEAK METHOD <div class="banner-dot"></div></div>
+      <div class="banner-item">ENTRENÁ CON PROPÓSITO <div class="banner-dot"></div></div>
+      <div class="banner-item">FUERZA DE VERDAD <div class="banner-dot"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HORARIOS -->
+<section id="horarios">
+  <div class="section-label">// 02 — Reserva tu turno</div>
+  <h2 class="section-title">ELEGÍ TU<br>HORARIO</h2>
+  <div class="schedule-info">
+    <div class="schedule-info-item">
+      <span class="info-label">Días</span>
+      <span class="info-val">LUN — VIE</span>
+    </div>
+    <div class="schedule-info-item">
+      <span class="info-label">Horario</span>
+      <span class="info-val">18:00 — 21:00</span>
+    </div>
+    <div class="schedule-info-item">
+      <span class="info-label">Duración</span>
+      <span class="info-val">1.5 HRS</span>
+    </div>
+    <div class="schedule-info-item">
+      <span class="info-label">Cupos</span>
+      <span class="info-val">10 / DÍA</span>
+    </div>
+  </div>
+
+  <div class="week-grid" id="weekGrid"></div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="background: var(--black);">
+  <div class="section-label">// 03 — Preguntas frecuentes</div>
+  <h2 class="section-title">FAQ</h2>
+  <div class="faq-list">
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        <span>¿Puedo venir a un horario distinto, como las 18:30?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        <p>Los turnos oficiales son <strong>18:00</strong> y <strong>19:30</strong>, cada uno de 1 hora y media. Si necesitás un horario intermedio o distinto al estándar, lo podemos coordinar por DM en Instagram. Hacemos lo posible para adaptarnos a tu disponibilidad.</p>
+        <a href="https://www.instagram.com/snoopeak.ar/" target="_blank" class="faq-ig-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          Coordinar por Instagram
+        </a>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        <span>¿Necesito experiencia previa para entrenar?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        <p>Para nada. El entrenamiento se adapta completamente a tu nivel actual, ya sea que estés empezando desde cero o que ya tengas experiencia. La evaluación inicial sirve justamente para conocer tu punto de partida y armar un plan acorde.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        <span>¿Qué tengo que traer a la clase?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        <p>Lo básico: ropa cómoda para entrenar, zapatillas deportivas y agua. Si tenés algún elemento propio que usás habitualmente (rodilleras, guantes, faja, etc.) también podés traerlo.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        <span>¿Puedo faltar y recuperar la clase?</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        <p>Sí, siempre que avises con anticipación. Para coordinar la recuperación o cancelar un turno reservado, mandanos un DM por Instagram y lo arreglamos sin problema.</p>
+        <a href="https://www.instagram.com/snoopeak.ar/" target="_blank" class="faq-ig-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          Avisar por Instagram
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .faq-list { max-width: 760px; border-top: 1px solid var(--mid); }
+  .faq-item { border-bottom: 1px solid var(--mid); }
+  .faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 0;
+    cursor: pointer;
+    text-align: left;
+    gap: 24px;
+  }
+  .faq-q span:first-child {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    line-height: 1.4;
+    transition: color 0.2s;
+  }
+  .faq-q:hover span:first-child { color: var(--accent); }
+  .faq-icon {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+  }
+  .faq-a {
+    display: none;
+    padding: 0 0 28px;
+    animation: fadeUp 0.25s ease;
+  }
+  .faq-a p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: rgba(245,240,235,0.6);
+    font-weight: 300;
+    max-width: 640px;
+  }
+  .faq-a p strong { color: var(--accent); font-weight: 600; }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+  .faq-ig-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(200,255,0,0.3);
+    padding-bottom: 2px;
+    transition: border-color 0.2s;
+  }
+  .faq-ig-link:hover { border-color: var(--accent); }
+</style>
+
+<script>
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+</script>
+
+<!-- CONTACTO -->
+<section id="contacto">
+  <div class="section-label">// 04 — Contacto</div>
+  <h2 class="section-title">¿TENÉS<br>CONSULTAS?</h2>
+  <p style="color: rgba(245,240,235,0.6); max-width: 480px; margin: 0 auto; line-height: 1.8; font-size: 1rem;">
+    Para consultas sobre horarios, disponibilidad, precios o cualquier otra duda, mandanos un DM por Instagram. Te respondemos a la brevedad.
+  </p>
+  <a class="ig-btn" href="https://www.instagram.com/snoopeak.ar/" target="_blank" rel="noopener">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+    @snoopeak.ar
+  </a>
+  <p class="contact-sub">Respondemos en el menor tiempo posible</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="logo-f">ꜱɴᴏᴏᴘᴇᴀᴋ</span>
+  <p>© 2026 SNOOPEAK — ENTRENAMIENTO PERSONALIZADO</p>
+  <p>LUN — VIE · 18:00 A 21:00</p>
+</footer>
+
+<!-- MODAL RESERVA (formulario) -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>RESERVAR TURNO</h3>
+    <p>Completá tus datos para confirmar el turno. Te podemos contactar si surge algún cambio.</p>
+    <div class="modal-detail">
+      <span>Día y horario seleccionado</span>
+      <strong id="modalSlotInfo">—</strong>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" type="text" id="inputNombre" placeholder="Tu nombre" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Apellido</label>
+      <input class="form-input" type="text" id="inputApellido" placeholder="Tu apellido" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Teléfono / WhatsApp</label>
+      <input class="form-input" type="tel" id="inputTel" placeholder="Ej: 11 1234-5678" autocomplete="off">
+    </div>
+    <p class="form-error" id="formError"></p>
+    <div class="modal-actions" style="margin-top: 24px;">
+      <button class="btn-confirm" id="btnConfirm">CONFIRMAR TURNO</button>
+      <button class="btn-cancel" id="btnCancel">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUCCESS -->
+<div class="modal-overlay" id="modalSuccess">
+  <div class="modal modal-success">
+    <span class="checkmark">✓</span>
+    <h3>¡TURNO RESERVADO!</h3>
+    <p>Tu lugar está asegurado. Te esperamos para entrenar.<br><br>Cualquier consulta mandanos DM por Instagram.</p>
+    <a class="ig-btn" href="https://www.instagram.com/snoopeak.ar/" target="_blank" style="margin-top: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      @snoopeak.ar
+    </a>
+    <button class="btn-cancel" id="btnSuccessClose" style="width:100%; margin-top: 12px;">CERRAR</button>
+  </div>
+</div>
+
+<!-- MODAL ADMIN LOGIN -->
+<div class="modal-overlay" id="modalAdmin">
+  <div class="modal">
+    <h3>PANEL ADMIN</h3>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" type="password" id="inputAdminPass" placeholder="••••••••" autocomplete="off">
+    </div>
+    <p class="form-error" id="adminError"></p>
+    <div class="modal-actions" style="margin-top: 24px;">
+      <button class="btn-confirm" id="btnAdminLogin">INGRESAR</button>
+      <button class="btn-cancel" id="btnAdminCancel">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL ADMIN -->
+<div class="modal-overlay" id="panelAdmin">
+  <div class="modal" style="max-width: 720px; max-height: 85vh; overflow-y: auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+      <h3 style="margin:0;">INSCRIPTOS</h3>
+      <button class="btn-cancel" id="btnAdminClose" style="padding: 8px 16px; font-size: 0.8rem;">CERRAR</button>
+    </div>
+    <div id="adminContent"></div>
+  </div>
+</div>
+
+<!-- BOTÓN ADMIN OCULTO (esquina inferior derecha) -->
+<button id="btnAdminTrigger" title="Admin">⚙</button>
+
+<style>
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--black);
+    border: 1px solid var(--mid);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: #444; }
+  .form-error {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: #ff4444;
+    letter-spacing: 1px;
+    min-height: 16px;
+    margin-top: 4px;
+  }
+  #btnAdminTrigger {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    width: 36px; height: 36px;
+    background: var(--gray);
+    border: 1px solid var(--mid);
+    color: #444;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 50%;
+    z-index: 200;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  #btnAdminTrigger:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Admin table */
+  .admin-day-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin: 24px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--mid);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .admin-day-title span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+  }
+  .admin-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--mid);
+  }
+  .admin-table td {
+    font-size: 0.88rem;
+    padding: 10px 12px;
+    border-bottom: 1px solid #222;
+    color: rgba(245,240,235,0.85);
+  }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-slot-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    background: rgba(200,255,0,0.1);
+    color: var(--accent);
+    padding: 3px 8px;
+    border: 1px solid rgba(200,255,0,0.2);
+  }
+  .admin-empty {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding: 16px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+  }
+  .admin-clear-btn {
+    margin-top: 32px;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .admin-clear-btn:hover { background: rgba(255,68,68,0.1); }
+</style>
+
+<script>
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    setTimeout(() => {
+      ring.style.left = e.clientX + 'px';
+      ring.style.top = e.clientY + 'px';
+    }, 60);
+  });
+
+  // ─── CONFIG ───────────────────────────────────────────
+  const DAYS  = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+  const SLOTS = ['18:00', '19:30']; // dos turnos de 1.5hs: 18:00-19:30 y 19:30-21:00
+  const MAX_PER_DAY = 10;
+  const ADMIN_PASS  = 'snoopeak2025'; // ← cambiá esta contraseña
+
+  const STORAGE_COUNTS = 'snoopeak_counts_v2';
+  const STORAGE_PEOPLE = 'snoopeak_people_v2';
+
+  // ─── STORAGE ──────────────────────────────────────────
+  function loadCounts() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_COUNTS)) || {}; } catch { return {}; }
+  }
+  function saveCounts(d) {
+    try { localStorage.setItem(STORAGE_COUNTS, JSON.stringify(d)); } catch {}
+  }
+  function loadPeople() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_PEOPLE)) || {}; } catch { return {}; }
+  }
+  function savePeople(d) {
+    try { localStorage.setItem(STORAGE_PEOPLE, JSON.stringify(d)); } catch {}
+  }
+
+  function dayTotal(counts, day) {
+    return SLOTS.reduce((acc, s) => acc + (counts[day + '__' + s] || 0), 0);
+  }
+
+  // ─── RENDER GRID ──────────────────────────────────────
+  function renderGrid() {
+    const counts = loadCounts();
+    const grid   = document.getElementById('weekGrid');
+    grid.innerHTML = '';
+
+    DAYS.forEach(day => {
+      const total    = dayTotal(counts, day);
+      const dayFull  = total >= MAX_PER_DAY;
+      const remaining = MAX_PER_DAY - total;
+
+      const col = document.createElement('div');
+      col.className = 'day-col';
+
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      header.textContent = day.toUpperCase().slice(0, 3);
+      col.appendChild(header);
+
+      // cupos del día
+      const dayInfo = document.createElement('div');
+      dayInfo.style.cssText = 'text-align:center; padding: 6px 4px; font-family:Space Mono,monospace; font-size:0.58rem; letter-spacing:1px; color:' + (dayFull ? '#444' : 'rgba(200,255,0,0.7)');
+      dayInfo.textContent = dayFull ? 'DÍA COMPLETO' : remaining + ' cupo' + (remaining === 1 ? '' : 's');
+      col.appendChild(dayInfo);
+
+      SLOTS.forEach(slot => {
+        const slotCount = counts[day + '__' + slot] || 0;
+        const slotEnd   = slot === '18:00' ? '19:30' : '21:00';
+        const full      = dayFull;
+
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn' + (full ? ' taken' : '');
+        btn.disabled  = full;
+        btn.innerHTML = `${slot} – ${slotEnd}`;
+        if (!full) btn.addEventListener('click', () => openModal(day, slot, slotEnd));
+        col.appendChild(btn);
+      });
+
+      grid.appendChild(col);
+    });
+  }
+
+  // ─── MODAL RESERVA ────────────────────────────────────
+  let pendingDay = null, pendingSlot = null;
+
+  function openModal(day, slot, slotEnd) {
+    pendingDay  = day;
+    pendingSlot = slot;
+    document.getElementById('modalSlotInfo').textContent = `${day} — ${slot} a ${slotEnd} hs`;
+    document.getElementById('inputNombre').value   = '';
+    document.getElementById('inputApellido').value = '';
+    document.getElementById('inputTel').value      = '';
+    document.getElementById('formError').textContent = '';
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(() => document.getElementById('inputNombre').focus(), 100);
+  }
+
+  document.getElementById('btnCancel').addEventListener('click', () => {
+    document.getElementById('modalOverlay').classList.remove('active');
+  });
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay'))
+      document.getElementById('modalOverlay').classList.remove('active');
+  });
+
+  document.getElementById('btnConfirm').addEventListener('click', () => {
+    const nombre   = document.getElementById('inputNombre').value.trim();
+    const apellido = document.getElementById('inputApellido').value.trim();
+    const tel      = document.getElementById('inputTel').value.trim();
+    const errEl    = document.getElementById('formError');
+
+    if (!nombre || !apellido || !tel) {
+      errEl.textContent = '⚠ Completá todos los campos para continuar.';
+      return;
+    }
+    errEl.textContent = '';
+
+    // guardar conteo
+    const counts = loadCounts();
+    const key    = pendingDay + '__' + pendingSlot;
+    counts[key]  = (counts[key] || 0) + 1;
+    saveCounts(counts);
+
+    // guardar persona
+    const people = loadPeople();
+    if (!people[pendingDay]) people[pendingDay] = [];
+    people[pendingDay].push({
+      nombre, apellido, tel,
+      slot: pendingSlot,
+      ts: new Date().toLocaleString('es-AR')
+    });
+    savePeople(people);
+
+    document.getElementById('modalOverlay').classList.remove('active');
+    document.getElementById('modalSuccess').classList.add('active');
+    renderGrid();
+    pendingDay = null; pendingSlot = null;
+  });
+
+  document.getElementById('btnSuccessClose').addEventListener('click', () => {
+    document.getElementById('modalSuccess').classList.remove('active');
+  });
+
+  // ─── ADMIN ────────────────────────────────────────────
+  document.getElementById('btnAdminTrigger').addEventListener('click', () => {
+    document.getElementById('inputAdminPass').value = '';
+    document.getElementById('adminError').textContent = '';
+    document.getElementById('modalAdmin').classList.add('active');
+    setTimeout(() => document.getElementById('inputAdminPass').focus(), 100);
+  });
+  document.getElementById('btnAdminCancel').addEventListener('click', () => {
+    document.getElementById('modalAdmin').classList.remove('active');
+  });
+  document.getElementById('inputAdminPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnAdminLogin').click();
+  });
+  document.getElementById('btnAdminLogin').addEventListener('click', () => {
+    const pass = document.getElementById('inputAdminPass').value;
+    if (pass !== ADMIN_PASS) {
+      document.getElementById('adminError').textContent = '⚠ Contraseña incorrecta.';
+      return;
+    }
+    document.getElementById('modalAdmin').classList.remove('active');
+    renderAdminPanel();
+    document.getElementById('panelAdmin').classList.add('active');
+  });
+  document.getElementById('btnAdminClose').addEventListener('click', () => {
+    document.getElementById('panelAdmin').classList.remove('active');
+  });
+
+  function renderAdminPanel() {
+    const people = loadPeople();
+    const counts = loadCounts();
+    const content = document.getElementById('adminContent');
+    content.innerHTML = '';
+
+    let hasAny = false;
+    DAYS.forEach(day => {
+      const list  = people[day] || [];
+      const total = dayTotal(counts, day);
+      if (!list.length) return;
+      hasAny = true;
+
+      const title = document.createElement('div');
+      title.className = 'admin-day-title';
+      title.innerHTML = `${day.toUpperCase()} <span>${total} / ${MAX_PER_DAY} cupos ocupados</span>`;
+      content.appendChild(title);
+
+      if (!list.length) {
+        const empty = document.createElement('p');
+        empty.className = 'admin-empty';
+        empty.textContent = 'Sin inscriptos aún.';
+        content.appendChild(empty);
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      table.innerHTML = `
+        <thead><tr>
+          <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Turno</th><th>Registrado</th>
+        </tr></thead>
+        <tbody>
+          ${list.map((p, i) => `
+            <tr>
+              <td style="color:var(--text-dim)">${i + 1}</td>
+              <td>${p.nombre}</td>
+              <td>${p.apellido}</td>
+              <td><a href="tel:${p.tel}" style="color:var(--accent); text-decoration:none;">${p.tel}</a></td>
+              <td><span class="admin-slot-tag">${p.slot}</span></td>
+              <td style="color:var(--text-dim); font-size:0.75rem;">${p.ts}</td>
+            </tr>`).join('')}
+        </tbody>`;
+      content.appendChild(table);
+    });
+
+    if (!hasAny) {
+      content.innerHTML = '<p class="admin-empty" style="padding:24px 0;">No hay inscriptos todavía.</p>';
+    }
+
+    // botón limpiar todo
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'admin-clear-btn';
+    clearBtn.textContent = 'BORRAR TODOS LOS TURNOS';
+    clearBtn.addEventListener('click', () => {
+      if (confirm('¿Seguro que querés borrar TODOS los turnos? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem(STORAGE_COUNTS);
+        localStorage.removeItem(STORAGE_PEOPLE);
+        document.getElementById('panelAdmin').classList.remove('active');
+        renderGrid();
+      }
+    });
+    content.appendChild(clearBtn);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────
+  renderGrid();
+</script>
+</body>
+</html>
