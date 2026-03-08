@@ -869,7 +869,7 @@
           <span class="stat-label">Cupos por día</span>
         </div>
         <div>
-          <span class="stat-num">1 hs y 30 mns</span>
+          <span class="stat-num">1.5hs</span>
           <span class="stat-label">Por clase</span>
         </div>
         <div>
@@ -1108,7 +1108,7 @@
     </div>
     <div class="schedule-info-item">
       <span class="info-label">Duración</span>
-      <span class="info-val">1 hs y 30 mns</span>
+      <span class="info-val">1.5 HRS</span>
     </div>
     <div class="schedule-info-item">
       <span class="info-label">Cupos</span>
@@ -1271,7 +1271,7 @@
 <!-- FOOTER -->
 <footer>
   <span class="logo-f">ꜱɴᴏᴏᴘᴇᴀᴋ</span>
-  <p>© 2026 SNOOPEAK — ENTRENAMIENTO PERSONALIZADO</p>
+  <p>© 2025 SNOOPEAK — ENTRENAMIENTO PERSONALIZADO</p>
   <p>LUN — VIE · 18:00 A 21:00</p>
 </footer>
 
@@ -1471,250 +1471,277 @@
   .admin-clear-btn:hover { background: rgba(255,68,68,0.1); }
 </style>
 
-<script>
-  function switchTab(id) {
-    document.querySelectorAll('.entrena-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.etab').forEach(t => t.classList.remove('active'));
-    document.getElementById('panel-' + id).classList.add('active');
-    event.target.classList.add('active');
-  }
+<script type="module">
+// ─── FIREBASE ─────────────────────────────────────────
+import { initializeApp }                    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc,
+         onSnapshot, deleteDoc, collection,
+         getDocs }                          from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-  // ─── CURSOR ───────────────────────────────────────────
-  const cursor = document.getElementById('cursor');
-  const ring = document.getElementById('cursorRing');
-  document.addEventListener('mousemove', e => {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-    setTimeout(() => {
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
-    }, 60);
-  });
+const firebaseConfig = {
+  apiKey:            "AIzaSyA7RHmZjuO3U__nf0Q3xlGh1TQ70zwtC8w",
+  authDomain:        "snoopeak-43330.firebaseapp.com",
+  projectId:         "snoopeak-43330",
+  storageBucket:     "snoopeak-43330.firebasestorage.app",
+  messagingSenderId: "735076878980",
+  appId:             "1:735076878980:web:08c5088e316f9a435590d1"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-  // ─── CONFIG ───────────────────────────────────────────
-  const DAYS  = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-  const SLOTS = ['18:00', '19:30']; // dos turnos de 1.5hs: 18:00-19:30 y 19:30-21:00
-  const MAX_PER_DAY = 10;
-  const ADMIN_PASS  = 'snoopeak2025'; // ← cambiá esta contraseña
+// ─── TABS (no necesita Firebase) ──────────────────────
+window.switchTab = function(id) {
+  document.querySelectorAll('.entrena-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.etab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
 
-  const STORAGE_COUNTS = 'snoopeak_counts_v2';
-  const STORAGE_PEOPLE = 'snoopeak_people_v2';
+// ─── CURSOR ───────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+  setTimeout(() => {
+    ring.style.left = e.clientX + 'px';
+    ring.style.top  = e.clientY + 'px';
+  }, 60);
+});
 
-  // ─── STORAGE ──────────────────────────────────────────
-  function loadCounts() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_COUNTS)) || {}; } catch { return {}; }
-  }
-  function saveCounts(d) {
-    try { localStorage.setItem(STORAGE_COUNTS, JSON.stringify(d)); } catch {}
-  }
-  function loadPeople() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_PEOPLE)) || {}; } catch { return {}; }
-  }
-  function savePeople(d) {
-    try { localStorage.setItem(STORAGE_PEOPLE, JSON.stringify(d)); } catch {}
-  }
+// ─── CONFIG ───────────────────────────────────────────
+const DAYS        = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+const SLOTS       = ['18:00', '19:30'];
+const MAX_PER_DAY = 10;
+const ADMIN_PASS  = 'snoopeak2025'; // ← cambiá esta contraseña
 
-  function dayTotal(counts, day) {
-    return SLOTS.reduce((acc, s) => acc + (counts[day + '__' + s] || 0), 0);
-  }
+// ─── FIREBASE STORAGE ─────────────────────────────────
+// Estructura en Firestore:
+//   turnos/counts  → { "Lunes__18:00": 3, ... }
+//   turnos/people  → { "Lunes": [ {nombre, apellido, tel, slot, ts}, ... ] }
 
-  // ─── RENDER GRID ──────────────────────────────────────
-  function renderGrid() {
-    const counts = loadCounts();
-    const grid   = document.getElementById('weekGrid');
-    grid.innerHTML = '';
+const countsRef = doc(db, 'turnos', 'counts');
+const peopleRef = doc(db, 'turnos', 'people');
 
-    DAYS.forEach(day => {
-      const total    = dayTotal(counts, day);
-      const dayFull  = total >= MAX_PER_DAY;
-      const remaining = MAX_PER_DAY - total;
+async function loadCounts() {
+  try {
+    const snap = await getDoc(countsRef);
+    return snap.exists() ? snap.data() : {};
+  } catch { return {}; }
+}
+async function saveCounts(data) {
+  try { await setDoc(countsRef, data); } catch(e) { console.error(e); }
+}
+async function loadPeople() {
+  try {
+    const snap = await getDoc(peopleRef);
+    return snap.exists() ? snap.data() : {};
+  } catch { return {}; }
+}
+async function savePeople(data) {
+  try { await setDoc(peopleRef, data); } catch(e) { console.error(e); }
+}
 
-      const col = document.createElement('div');
-      col.className = 'day-col';
+function dayTotal(counts, day) {
+  return SLOTS.reduce((acc, s) => acc + (counts[day + '__' + s] || 0), 0);
+}
 
-      const header = document.createElement('div');
-      header.className = 'day-header';
-      header.textContent = day.toUpperCase().slice(0, 3);
-      col.appendChild(header);
+// ─── RENDER GRID ──────────────────────────────────────
+async function renderGrid() {
+  const counts = await loadCounts();
+  const grid   = document.getElementById('weekGrid');
+  grid.innerHTML = '';
 
-      // cupos del día
-      const dayInfo = document.createElement('div');
-      dayInfo.style.cssText = 'text-align:center; padding: 6px 4px; font-family:Space Mono,monospace; font-size:0.58rem; letter-spacing:1px; color:' + (dayFull ? '#444' : 'rgba(200,255,0,0.7)');
-      dayInfo.textContent = dayFull ? 'DÍA COMPLETO' : remaining + ' cupo' + (remaining === 1 ? '' : 's');
-      col.appendChild(dayInfo);
+  DAYS.forEach(day => {
+    const total     = dayTotal(counts, day);
+    const dayFull   = total >= MAX_PER_DAY;
+    const remaining = MAX_PER_DAY - total;
 
-      SLOTS.forEach(slot => {
-        const slotCount = counts[day + '__' + slot] || 0;
-        const slotEnd   = slot === '18:00' ? '19:30' : '21:00';
-        const full      = dayFull;
+    const col = document.createElement('div');
+    col.className = 'day-col';
 
-        const btn = document.createElement('button');
-        btn.className = 'slot-btn' + (full ? ' taken' : '');
-        btn.disabled  = full;
-        btn.innerHTML = `${slot} – ${slotEnd}`;
-        if (!full) btn.addEventListener('click', () => openModal(day, slot, slotEnd));
-        col.appendChild(btn);
-      });
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.textContent = day.toUpperCase().slice(0, 3);
+    col.appendChild(header);
 
-      grid.appendChild(col);
+    const dayInfo = document.createElement('div');
+    dayInfo.style.cssText = 'text-align:center; padding:6px 4px; font-family:Space Mono,monospace; font-size:0.58rem; letter-spacing:1px; color:' + (dayFull ? '#444' : 'rgba(255,230,0,0.7)');
+    dayInfo.textContent = dayFull ? 'DÍA COMPLETO' : remaining + ' cupo' + (remaining === 1 ? '' : 's');
+    col.appendChild(dayInfo);
+
+    SLOTS.forEach(slot => {
+      const slotEnd = slot === '18:00' ? '19:30' : '21:00';
+      const btn = document.createElement('button');
+      btn.className = 'slot-btn' + (dayFull ? ' taken' : '');
+      btn.disabled  = dayFull;
+      btn.innerHTML = `${slot} – ${slotEnd}`;
+      if (!dayFull) btn.addEventListener('click', () => openModal(day, slot, slotEnd));
+      col.appendChild(btn);
     });
-  }
 
-  // ─── MODAL RESERVA ────────────────────────────────────
-  let pendingDay = null, pendingSlot = null;
+    grid.appendChild(col);
+  });
+}
 
-  function openModal(day, slot, slotEnd) {
-    pendingDay  = day;
-    pendingSlot = slot;
-    document.getElementById('modalSlotInfo').textContent = `${day} — ${slot} a ${slotEnd} hs`;
-    document.getElementById('inputNombre').value   = '';
-    document.getElementById('inputApellido').value = '';
-    document.getElementById('inputTel').value      = '';
-    document.getElementById('formError').textContent = '';
-    document.getElementById('modalOverlay').classList.add('active');
-    setTimeout(() => document.getElementById('inputNombre').focus(), 100);
-  }
+// ─── MODAL RESERVA ────────────────────────────────────
+let pendingDay = null, pendingSlot = null;
 
-  document.getElementById('btnCancel').addEventListener('click', () => {
+function openModal(day, slot, slotEnd) {
+  pendingDay  = day;
+  pendingSlot = slot;
+  document.getElementById('modalSlotInfo').textContent = `${day} — ${slot} a ${slotEnd} hs`;
+  document.getElementById('inputNombre').value   = '';
+  document.getElementById('inputApellido').value = '';
+  document.getElementById('inputTel').value      = '';
+  document.getElementById('formError').textContent = '';
+  document.getElementById('modalOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('inputNombre').focus(), 100);
+}
+
+document.getElementById('btnCancel').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('active');
+});
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay'))
     document.getElementById('modalOverlay').classList.remove('active');
-  });
-  document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('modalOverlay'))
-      document.getElementById('modalOverlay').classList.remove('active');
-  });
+});
 
-  document.getElementById('btnConfirm').addEventListener('click', () => {
-    const nombre   = document.getElementById('inputNombre').value.trim();
-    const apellido = document.getElementById('inputApellido').value.trim();
-    const tel      = document.getElementById('inputTel').value.trim();
-    const errEl    = document.getElementById('formError');
+document.getElementById('btnConfirm').addEventListener('click', async () => {
+  const nombre   = document.getElementById('inputNombre').value.trim();
+  const apellido = document.getElementById('inputApellido').value.trim();
+  const tel      = document.getElementById('inputTel').value.trim();
+  const errEl    = document.getElementById('formError');
 
-    if (!nombre || !apellido || !tel) {
-      errEl.textContent = '⚠ Completá todos los campos para continuar.';
-      return;
-    }
-    errEl.textContent = '';
+  if (!nombre || !apellido || !tel) {
+    errEl.textContent = '⚠ Completá todos los campos para continuar.';
+    return;
+  }
+  errEl.textContent = '';
 
+  // Mostrar loading
+  const btnConfirm = document.getElementById('btnConfirm');
+  btnConfirm.textContent = 'GUARDANDO...';
+  btnConfirm.disabled = true;
+
+  try {
     // guardar conteo
-    const counts = loadCounts();
+    const counts = await loadCounts();
     const key    = pendingDay + '__' + pendingSlot;
     counts[key]  = (counts[key] || 0) + 1;
-    saveCounts(counts);
+    await saveCounts(counts);
 
     // guardar persona
-    const people = loadPeople();
+    const people = await loadPeople();
     if (!people[pendingDay]) people[pendingDay] = [];
     people[pendingDay].push({
       nombre, apellido, tel,
       slot: pendingSlot,
       ts: new Date().toLocaleString('es-AR')
     });
-    savePeople(people);
+    await savePeople(people);
 
     document.getElementById('modalOverlay').classList.remove('active');
     document.getElementById('modalSuccess').classList.add('active');
-    renderGrid();
-    pendingDay = null; pendingSlot = null;
-  });
-
-  document.getElementById('btnSuccessClose').addEventListener('click', () => {
-    document.getElementById('modalSuccess').classList.remove('active');
-  });
-
-  // ─── ADMIN ────────────────────────────────────────────
-  document.getElementById('btnAdminTrigger').addEventListener('click', () => {
-    document.getElementById('inputAdminPass').value = '';
-    document.getElementById('adminError').textContent = '';
-    document.getElementById('modalAdmin').classList.add('active');
-    setTimeout(() => document.getElementById('inputAdminPass').focus(), 100);
-  });
-  document.getElementById('btnAdminCancel').addEventListener('click', () => {
-    document.getElementById('modalAdmin').classList.remove('active');
-  });
-  document.getElementById('inputAdminPass').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('btnAdminLogin').click();
-  });
-  document.getElementById('btnAdminLogin').addEventListener('click', () => {
-    const pass = document.getElementById('inputAdminPass').value;
-    if (pass !== ADMIN_PASS) {
-      document.getElementById('adminError').textContent = '⚠ Contraseña incorrecta.';
-      return;
-    }
-    document.getElementById('modalAdmin').classList.remove('active');
-    renderAdminPanel();
-    document.getElementById('panelAdmin').classList.add('active');
-  });
-  document.getElementById('btnAdminClose').addEventListener('click', () => {
-    document.getElementById('panelAdmin').classList.remove('active');
-  });
-
-  function renderAdminPanel() {
-    const people = loadPeople();
-    const counts = loadCounts();
-    const content = document.getElementById('adminContent');
-    content.innerHTML = '';
-
-    let hasAny = false;
-    DAYS.forEach(day => {
-      const list  = (people[day] || []).slice().sort((a, b) => a.slot.localeCompare(b.slot));
-      const total = dayTotal(counts, day);
-      if (!list.length) return;
-      hasAny = true;
-
-      const title = document.createElement('div');
-      title.className = 'admin-day-title';
-      title.innerHTML = `${day.toUpperCase()} <span>${total} / ${MAX_PER_DAY} cupos ocupados</span>`;
-      content.appendChild(title);
-
-      if (!list.length) {
-        const empty = document.createElement('p');
-        empty.className = 'admin-empty';
-        empty.textContent = 'Sin inscriptos aún.';
-        content.appendChild(empty);
-        return;
-      }
-
-      const table = document.createElement('table');
-      table.className = 'admin-table';
-      table.innerHTML = `
-        <thead><tr>
-          <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Turno</th><th>Registrado</th>
-        </tr></thead>
-        <tbody>
-          ${list.map((p, i) => `
-            <tr>
-              <td style="color:var(--text-dim)">${i + 1}</td>
-              <td>${p.nombre}</td>
-              <td>${p.apellido}</td>
-              <td><a href="tel:${p.tel}" style="color:var(--accent); text-decoration:none;">${p.tel}</a></td>
-              <td><span class="admin-slot-tag">${p.slot}</span></td>
-              <td style="color:var(--text-dim); font-size:0.75rem;">${p.ts}</td>
-            </tr>`).join('')}
-        </tbody>`;
-      content.appendChild(table);
-    });
-
-    if (!hasAny) {
-      content.innerHTML = '<p class="admin-empty" style="padding:24px 0;">No hay inscriptos todavía.</p>';
-    }
-
-    // botón limpiar todo
-    const clearBtn = document.createElement('button');
-    clearBtn.className = 'admin-clear-btn';
-    clearBtn.textContent = 'BORRAR TODOS LOS TURNOS';
-    clearBtn.addEventListener('click', () => {
-      if (confirm('¿Seguro que querés borrar TODOS los turnos? Esta acción no se puede deshacer.')) {
-        localStorage.removeItem(STORAGE_COUNTS);
-        localStorage.removeItem(STORAGE_PEOPLE);
-        document.getElementById('panelAdmin').classList.remove('active');
-        renderGrid();
-      }
-    });
-    content.appendChild(clearBtn);
+    await renderGrid();
+  } catch(e) {
+    errEl.textContent = '⚠ Error al guardar. Verificá tu conexión.';
+    console.error(e);
+  } finally {
+    btnConfirm.textContent = 'CONFIRMAR TURNO';
+    btnConfirm.disabled = false;
+    pendingDay = null;
+    pendingSlot = null;
   }
+});
 
-  // ─── INIT ─────────────────────────────────────────────
-  renderGrid();
+document.getElementById('btnSuccessClose').addEventListener('click', () => {
+  document.getElementById('modalSuccess').classList.remove('active');
+});
+
+// ─── ADMIN ────────────────────────────────────────────
+document.getElementById('btnAdminTrigger').addEventListener('click', () => {
+  document.getElementById('inputAdminPass').value = '';
+  document.getElementById('adminError').textContent = '';
+  document.getElementById('modalAdmin').classList.add('active');
+  setTimeout(() => document.getElementById('inputAdminPass').focus(), 100);
+});
+document.getElementById('btnAdminCancel').addEventListener('click', () => {
+  document.getElementById('modalAdmin').classList.remove('active');
+});
+document.getElementById('inputAdminPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnAdminLogin').click();
+});
+document.getElementById('btnAdminLogin').addEventListener('click', async () => {
+  const pass = document.getElementById('inputAdminPass').value;
+  if (pass !== ADMIN_PASS) {
+    document.getElementById('adminError').textContent = '⚠ Contraseña incorrecta.';
+    return;
+  }
+  document.getElementById('modalAdmin').classList.remove('active');
+  await renderAdminPanel();
+  document.getElementById('panelAdmin').classList.add('active');
+});
+document.getElementById('btnAdminClose').addEventListener('click', () => {
+  document.getElementById('panelAdmin').classList.remove('active');
+});
+
+async function renderAdminPanel() {
+  const people = await loadPeople();
+  const counts = await loadCounts();
+  const content = document.getElementById('adminContent');
+  content.innerHTML = '<p style="color:var(--text-dim);font-family:Space Mono,monospace;font-size:0.7rem;">Cargando...</p>';
+
+  let html = '';
+  let hasAny = false;
+
+  DAYS.forEach(day => {
+    const list  = (people[day] || []).slice().sort((a, b) => a.slot.localeCompare(b.slot));
+    const total = dayTotal(counts, day);
+    if (!list.length) return;
+    hasAny = true;
+
+    html += `<div class="admin-day-title">${day.toUpperCase()} <span>${total} / ${MAX_PER_DAY} cupos ocupados</span></div>`;
+    html += `<table class="admin-table">
+      <thead><tr>
+        <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Turno</th><th>Registrado</th>
+      </tr></thead><tbody>
+      ${list.map((p, i) => `
+        <tr>
+          <td style="color:var(--text-dim)">${i + 1}</td>
+          <td>${p.nombre}</td>
+          <td>${p.apellido}</td>
+          <td><a href="tel:${p.tel}" style="color:var(--accent);text-decoration:none;">${p.tel}</a></td>
+          <td><span class="admin-slot-tag">${p.slot}</span></td>
+          <td style="color:var(--text-dim);font-size:0.75rem;">${p.ts}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  });
+
+  if (!hasAny) html = '<p class="admin-empty" style="padding:24px 0;">No hay inscriptos todavía.</p>';
+
+  content.innerHTML = html;
+
+  // botón borrar todo
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'admin-clear-btn';
+  clearBtn.textContent = 'BORRAR TODOS LOS TURNOS';
+  clearBtn.addEventListener('click', async () => {
+    if (confirm('¿Seguro que querés borrar TODOS los turnos? Esta acción no se puede deshacer.')) {
+      await deleteDoc(countsRef);
+      await deleteDoc(peopleRef);
+      document.getElementById('panelAdmin').classList.remove('active');
+      await renderGrid();
+    }
+  });
+  content.appendChild(clearBtn);
+}
+
+// ─── INIT ─────────────────────────────────────────────
+// Escuchar cambios en tiempo real — si alguien reserva, la grilla se actualiza automáticamente
+onSnapshot(countsRef, () => { renderGrid(); });
+
+renderGrid();
 </script>
 </body>
 </html>
