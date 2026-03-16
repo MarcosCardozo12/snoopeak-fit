@@ -870,7 +870,7 @@
           <span class="stat-label">Cupos por día</span>
         </div>
         <div>
-          <span class="stat-num">1hs y 30 mins</span>
+          <span class="stat-num">1.5hs</span>
           <span class="stat-label">Por clase</span>
         </div>
         <div>
@@ -1109,7 +1109,7 @@
     </div>
     <div class="schedule-info-item">
       <span class="info-label">Duración</span>
-      <span class="info-val">1hs y 30 mins</span>
+      <span class="info-val">1.5 HRS</span>
     </div>
     <div class="schedule-info-item">
       <span class="info-label">Cupos</span>
@@ -1272,7 +1272,7 @@
 <!-- FOOTER -->
 <footer>
   <span class="logo-f">ꜱɴᴏᴏᴘᴇᴀᴋ</span>
-  <p>© 2026 SNOOPEAK — ENTRENAMIENTO PERSONALIZADO</p>
+  <p>© 2025 SNOOPEAK — ENTRENAMIENTO PERSONALIZADO</p>
   <p>LUN — VIE · 18:00 A 21:00</p>
 </footer>
 
@@ -1511,10 +1511,17 @@ document.addEventListener('mousemove', e => {
 });
 
 // ─── CONFIG ───────────────────────────────────────────
-const DAYS        = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-const SLOTS       = ['18:00', '19:30'];
-const MAX_PER_DAY = 10;
-const ADMIN_PASS  = 'snoopeak2025'; // ← cambiá esta contraseña
+const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+const DAY_SLOTS = {
+  'Lunes':     ['18:00', '19:30'],
+  'Martes':    ['18:00', '19:30'],
+  'Miércoles': ['16:30', '18:00', '19:30'],
+  'Jueves':    ['16:30', '18:00', '19:30'],
+  'Viernes':   ['19:30']
+};
+const SLOT_END = { '16:30': '18:00', '18:00': '19:30', '19:30': '21:00' };
+const MAX_PER_SLOT = 6;
+const ADMIN_PASS   = 'snoopeak2025'; // ← cambiá esta contraseña
 
 // ─── FIREBASE STORAGE ─────────────────────────────────
 // Estructura en Firestore:
@@ -1544,7 +1551,7 @@ async function savePeople(data) {
 }
 
 function dayTotal(counts, day) {
-  return SLOTS.reduce((acc, s) => acc + (counts[day + '__' + s] || 0), 0);
+  return (DAY_SLOTS[day] || []).reduce((acc, s) => acc + (counts[day + '__' + s] || 0), 0);
 }
 
 // ─── RENDER GRID ──────────────────────────────────────
@@ -1554,10 +1561,7 @@ async function renderGrid() {
   grid.innerHTML = '';
 
   DAYS.forEach(day => {
-    const total     = dayTotal(counts, day);
-    const dayFull   = total >= MAX_PER_DAY;
-    const remaining = MAX_PER_DAY - total;
-
+    const slots = DAY_SLOTS[day] || [];
     const col = document.createElement('div');
     col.className = 'day-col';
 
@@ -1566,18 +1570,22 @@ async function renderGrid() {
     header.textContent = day.toUpperCase().slice(0, 3);
     col.appendChild(header);
 
-    const dayInfo = document.createElement('div');
-    dayInfo.style.cssText = 'text-align:center; padding:6px 4px; font-family:Space Mono,monospace; font-size:0.58rem; letter-spacing:1px; color:' + (dayFull ? '#444' : 'rgba(255,230,0,0.7)');
-    dayInfo.textContent = dayFull ? 'DÍA COMPLETO' : remaining + ' cupo' + (remaining === 1 ? '' : 's');
-    col.appendChild(dayInfo);
+    slots.forEach(slot => {
+      const slotCount = counts[day + '__' + slot] || 0;
+      const slotFull  = slotCount >= MAX_PER_SLOT;
+      const remaining = MAX_PER_SLOT - slotCount;
+      const slotEnd   = SLOT_END[slot];
 
-    SLOTS.forEach(slot => {
-      const slotEnd = slot === '18:00' ? '19:30' : '21:00';
+      const info = document.createElement('div');
+      info.style.cssText = 'text-align:center; padding:3px 4px; font-family:Space Mono,monospace; font-size:0.55rem; letter-spacing:1px; color:' + (slotFull ? '#444' : 'rgba(255,230,0,0.7)');
+      info.textContent = slotFull ? 'COMPLETO' : remaining + ' cupo' + (remaining === 1 ? '' : 's');
+      col.appendChild(info);
+
       const btn = document.createElement('button');
-      btn.className = 'slot-btn' + (dayFull ? ' taken' : '');
-      btn.disabled  = dayFull;
+      btn.className = 'slot-btn' + (slotFull ? ' taken' : '');
+      btn.disabled  = slotFull;
       btn.innerHTML = `${slot} – ${slotEnd}`;
-      if (!dayFull) btn.addEventListener('click', () => openModal(day, slot, slotEnd));
+      if (!slotFull) btn.addEventListener('click', () => openModal(day, slot, slotEnd));
       col.appendChild(btn);
     });
 
@@ -1626,9 +1634,15 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
   btnConfirm.disabled = true;
 
   try {
-    // guardar conteo
+    // guardar conteo — verificar que el slot no esté lleno
     const counts = await loadCounts();
     const key    = pendingDay + '__' + pendingSlot;
+    if ((counts[key] || 0) >= MAX_PER_SLOT) {
+      errEl.textContent = '⚠ Este turno ya no tiene cupos disponibles.';
+      btnConfirm.textContent = 'CONFIRMAR TURNO';
+      btnConfirm.disabled = false;
+      return;
+    }
     counts[key]  = (counts[key] || 0) + 1;
     await saveCounts(counts);
 
@@ -1697,26 +1711,46 @@ async function renderAdminPanel() {
   let hasAny = false;
 
   DAYS.forEach(day => {
-    const list  = (people[day] || []).slice().sort((a, b) => a.slot.localeCompare(b.slot));
-    const total = dayTotal(counts, day);
-    if (!list.length) return;
+    const allPeople = people[day] || [];
+    const slots     = DAY_SLOTS[day] || [];
+    const total     = dayTotal(counts, day);
+    const maxDay    = slots.length * MAX_PER_SLOT;
+
+    // verificar si hay alguien este día
+    if (!allPeople.length) return;
     hasAny = true;
 
-    html += `<div class="admin-day-title">${day.toUpperCase()} <span>${total} / ${MAX_PER_DAY} cupos ocupados</span></div>`;
-    html += `<table class="admin-table">
-      <thead><tr>
-        <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Turno</th><th>Registrado</th>
-      </tr></thead><tbody>
-      ${list.map((p, i) => `
-        <tr>
-          <td style="color:var(--text-dim)">${i + 1}</td>
-          <td>${p.nombre}</td>
-          <td>${p.apellido}</td>
-          <td><a href="tel:${p.tel}" style="color:var(--accent);text-decoration:none;">${p.tel}</a></td>
-          <td><span class="admin-slot-tag">${p.slot}</span></td>
-          <td style="color:var(--text-dim);font-size:0.75rem;">${p.ts}</td>
-        </tr>`).join('')}
-      </tbody></table>`;
+    html += `<div class="admin-day-title">${day.toUpperCase()} <span>${total} / ${maxDay} cupos ocupados</span></div>`;
+
+    slots.forEach(slot => {
+      const slotEnd   = SLOT_END[slot];
+      const slotCount = counts[day + '__' + slot] || 0;
+      const slotList  = allPeople.filter(p => p.slot === slot);
+
+      html += `<div style="margin:8px 0 4px; padding:6px 12px; background:rgba(255,230,0,0.07); border-left:3px solid var(--accent); font-family:Space Mono,monospace; font-size:0.65rem; letter-spacing:1px; color:var(--accent);">
+        TURNO ${slot} – ${slotEnd} &nbsp;·&nbsp; ${slotCount} / ${MAX_PER_SLOT} cupos
+      </div>`;
+
+      if (!slotList.length) {
+        html += `<p style="color:var(--text-dim);font-size:0.75rem;padding:4px 12px 8px;">Sin inscriptos en este turno.</p>`;
+      } else {
+        html += `<table class="admin-table">
+          <thead><tr>
+            <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Registrado</th>
+          </tr></thead><tbody>
+          ${slotList.map((p, i) => `
+            <tr>
+              <td style="color:var(--text-dim)">${i + 1}</td>
+              <td>${p.nombre}</td>
+              <td>${p.apellido}</td>
+              <td><a href="tel:${p.tel}" style="color:var(--accent);text-decoration:none;">${p.tel}</a></td>
+              <td style="color:var(--text-dim);font-size:0.75rem;">${p.ts}</td>
+            </tr>`).join('')}
+          </tbody></table>`;
+      }
+    });
+
+    html += `<div style="height:1px;background:var(--border);margin:16px 0;"></div>`;
   });
 
   if (!hasAny) html = '<p class="admin-empty" style="padding:24px 0;">No hay inscriptos todavía.</p>';
