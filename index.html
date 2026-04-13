@@ -937,7 +937,7 @@
         <span class="faq-icon">+</span>
       </button>
       <div class="faq-a">
-        <p>Los turnos oficiales son <strong>18:00</strong> y <strong>19:30</strong>, cada uno de 1 hora y media. Si necesitás un horario intermedio o distinto al estándar, lo podemos coordinar por DM en Instagram. Hacemos lo posible para adaptarnos a tu disponibilidad.</p>
+        <p>Los turnos son de 1 hora y media. <strong>Lunes, Miércoles y Jueves</strong>: 15:00, 16:30, 18:00 y 19:30. <strong>Martes y Viernes</strong>: 17:00, 18:30 y 20:00. Si necesitás un horario distinto al estándar, lo podemos coordinar por DM en Instagram. Hacemos lo posible para adaptarnos a tu disponibilidad.</p>
         <a href="https://www.instagram.com/snoopeak.ar/" target="_blank" class="faq-ig-link">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
           Coordinar por Instagram
@@ -1318,13 +1318,13 @@ document.addEventListener('mousemove', e => {
 // ─── CONFIG ───────────────────────────────────────────
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const DAY_SLOTS = {
-  'Lunes':     ['18:00', '19:30'],
-  'Martes':    ['18:00', '19:30'],
-  'Miércoles': ['16:30', '18:00', '19:30'],
-  'Jueves':    ['16:30', '18:00', '19:30'],
-  'Viernes':   ['19:30']
+  'Lunes':     ['15:00', '16:30', '18:00', '19:30'],
+  'Martes':    ['17:00', '18:30', '20:00'],
+  'Miércoles': ['15:00', '16:30', '18:00', '19:30'],
+  'Jueves':    ['15:00', '16:30', '18:00', '19:30'],
+  'Viernes':   ['17:00', '18:30', '20:00']
 };
-const SLOT_END = { '16:30': '18:00', '18:00': '19:30', '19:30': '21:00' };
+const SLOT_END = { '15:00': '16:30', '16:30': '18:00', '18:00': '19:30', '19:30': '21:00', '17:00': '18:30', '18:30': '20:00', '20:00': '21:30' };
 const MAX_PER_SLOT = 6;
 const ADMIN_PASS   = 'snoopeak2025'; // ← cambiá esta contraseña
 
